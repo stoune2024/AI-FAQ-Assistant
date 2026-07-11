@@ -8,51 +8,15 @@ services:
       POSTGRES_PASSWORD: ${DB_PASS}
       POSTGRES_DB: ${DB_name}
 
-  rabbitmq:
-    image: rabbitmq:3-management
-    ports:
-      - "5672:5672"
-      - "15672:15672"
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
   api:
     build: .
-    command: >
-      sh -c "
-      alembic upgrade head &&
-      python main.py
-      "
     depends_on:
       postgres:
         condition: service_started
-      rabbitmq:
-        condition: service_healthy
     env_file:
       - .env
     ports:
       - "8000:8000"
-
-  publisher:
-    build: .
-    command: python publisher_main.py
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-      postgres:
-        condition: service_started
-
-  consumer:
-    build: .
-    command: python consumer_main.py
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-      postgres:
-        condition: service_started
 
   adminer:
     image: adminer
