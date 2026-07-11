@@ -10,6 +10,11 @@ services:
 
   api:
     build: .
+    command: >
+      sh -c "
+      python main.py
+      "
+
     depends_on:
       postgres:
         condition: service_started
