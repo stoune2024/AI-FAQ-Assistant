@@ -6,12 +6,17 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    DB_HOST: str
-    DB_PORT: str
-    DB_USER: str
-    DB_PASS: str
-    DB_NAME: str
-    API_KEY: str
+    POSTGRES_HOST: str
+    POSTGRES_PORT: str
+    POSTGRES_USER: str
+    POSTGRES_PASSWORD: str
+    POSTGRES_DB: str
+
+    APP_HOST: str
+    APP_PORT: int
+
+    OPENAI_API_KEY: str
+    MODEL_NAME: str
 
     class Config:
         env_file = ".env"
@@ -24,12 +29,9 @@ class Settings(BaseSettings):
         )
 
 
-settings = Settings()
-
-
 @lru_cache()
 def get_settings():
-    return settings
+    return Settings()
 
 
 SettingsDep = Annotated[Settings, Depends(get_settings)]
