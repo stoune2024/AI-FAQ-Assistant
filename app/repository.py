@@ -1,25 +1,30 @@
-from typing import Annotated, Any
-from fastapi import Depends
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
-from settings.settings import settings
-
-engine = create_async_engine(settings.db_url, echo=False)
-SessionLocal = async_sessionmaker(engine, expire_on_commit=False)
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.schemas import ConversationSchema, MessageSchema
 
 
-async def get_session() -> AsyncSession:
-    async with SessionLocal() as session:
-        yield session
+class ConversationRepository:
+    def __init__(self, session: AsyncSession):
+        self._session = session
 
+    def create_conversation(self) -> ConversationSchema:
+        pass
 
-SessionDep = Annotated[Any, Depends(get_session)]
+    def get_conversation(self, conversation_id: int) -> ConversationSchema | None:
+        pass
 
+    def get_messages(self, conversation_id: int) -> list[MessageSchema]:
+        pass
 
-class Repository:
-    """
-    Класс для взаимодействия с БД
-    """
+    def add_message(
+        self,
+        conversation_id: int,
+        role: str,
+        content: str,
+        prompt_tokens: int | None = None,
+        completion_tokens: int | None = None,
+        total_tokens: int | None = None,
+    ):
+        pass
 
-    @staticmethod
-    async def get_by_idempotency_key(session, key):
+    def get_history_for_llm(self):
         pass

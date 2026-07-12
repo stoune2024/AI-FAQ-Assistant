@@ -1,12 +1,51 @@
-import uuid
+from datetime import datetime
 
-from sqlalchemy import Column, String
-from sqlalchemy.orm import declarative_base
+from sqlalchemy import DateTime
+from sqlalchemy import ForeignKey
+from sqlalchemy import Integer
+from sqlalchemy import String
+from sqlalchemy import func
 
-Base = declarative_base()
+from sqlalchemy.orm import Mapped
+from sqlalchemy.orm import mapped_column
+from sqlalchemy.orm import relationship
+
+from app.database import Base
 
 
-class Something(Base):
-    __tablename__ = "something"
-    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    description = Column(String)
+class ConversationSchema(Base):
+    __tablename__ = "conversations"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+    messages: Mapped[list["MessageSchema"]] = relationship(
+        back_populates="conversation", cascade="all, delete-orphan"
+    )
+
+
+class MessageSchema(Base):
+    __tablename__ = "messages"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+
+    conversation_id: Mapped[int] = mapped_column(ForeignKey("conversations.id"))
+
+    role: Mapped[str] = mapped_column(String(20))
+
+    content: Mapped[str] = mapped_column(String)
+
+    prompt_tokens: Mapped[int | None]
+
+    completion_tokens: Mapped[int | None]
+
+    total_tokens: Mapped[int | None]
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+    conversation: Mapped["ConversationSchema"] = relationship(back_populates="messages")
