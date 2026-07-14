@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.schemas import ConversationSchema, MessageSchema
 from sqlalchemy import select
-from app.utils import MessageRole
+from app.models import MessageRole
 
 
 class ConversationRepository:
