@@ -8,32 +8,33 @@ class ConversationRepository:
     def __init__(self, session: AsyncSession):
         self._session = session
 
-    def create_conversation(self) -> ConversationSchema:
+    async def create_conversation(self) -> ConversationSchema:
         conversation = ConversationSchema()
 
         self._session.add(conversation)
-        self._session.commit()
-        self._session.refresh(conversation)
+        await self._session.flush()
+        await self._session.refresh(conversation)
 
         return conversation
 
-    def get_conversation(self, conversation_id: int) -> ConversationSchema | None:
+    async def get_conversation(self, conversation_id: int) -> ConversationSchema | None:
         statement = select(ConversationSchema).where(
             ConversationSchema.id == conversation_id
         )
 
-        return self._session.scalar(statement)
+        return await self._session.scalar(statement)
 
-    def get_messages(self, conversation_id: int) -> list[MessageSchema]:
+    async def get_messages(self, conversation_id: int) -> list[MessageSchema]:
         statement = (
             select(MessageSchema)
             .where(MessageSchema.conversation_id == conversation_id)
             .order_by(MessageSchema.created_at)
         )
 
-        return list(self._session.scalars(statement))
+        result = await self._session.scalars(statement)
+        return list(result)
 
-    def add_message(
+    async def add_message(
         self,
         conversation_id: int,
         role: MessageRole,
@@ -52,9 +53,7 @@ class ConversationRepository:
         )
 
         self._session.add(message)
-        self._session.commit()
-        self._session.refresh(message)
-
+        await self._session.flush()
         return message
 
     def get_history_for_llm(self):
