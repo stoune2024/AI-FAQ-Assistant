@@ -1,14 +1,14 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.schemas import ConversationSchema, MessageSchema
 from sqlalchemy import select
-from app.models import MessageRole
+from app.models import MessageRole, Conversation, ChatMessage
 
 
 class ConversationRepository:
     def __init__(self, session: AsyncSession):
         self._session = session
 
-    async def create_conversation(self) -> ConversationSchema:
+    async def create_conversation(self) -> Conversation:
         conversation = ConversationSchema()
 
         self._session.add(conversation)
@@ -17,14 +17,14 @@ class ConversationRepository:
 
         return conversation
 
-    async def get_conversation(self, conversation_id: int) -> ConversationSchema | None:
+    async def get_conversation(self, conversation_id: int) -> Conversation | None:
         statement = select(ConversationSchema).where(
             ConversationSchema.id == conversation_id
         )
 
         return await self._session.scalar(statement)
 
-    async def get_messages(self, conversation_id: int) -> list[MessageSchema]:
+    async def get_messages(self, conversation_id: int) -> list[ChatMessage]:
         statement = (
             select(MessageSchema)
             .where(MessageSchema.conversation_id == conversation_id)
@@ -55,6 +55,3 @@ class ConversationRepository:
         self._session.add(message)
         await self._session.flush()
         return message
-
-    def get_history_for_llm(self):
-        pass

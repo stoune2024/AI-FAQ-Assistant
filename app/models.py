@@ -27,6 +27,10 @@ class TokenUsage(BaseModel):
     total_tokens: int = 0
 
 
+class Conversation(BaseModel):
+    id: int
+
+
 """
 
 HTTP DTO модели

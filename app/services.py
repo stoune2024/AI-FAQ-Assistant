@@ -6,10 +6,9 @@
 
 from typing import AsyncIterator
 
-from app.repository import ConversationRepository
-from app.clients import OpenAIClient
 from app.models import MessageRole, ChatMessage
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.protocols import ConversationRepositoryProtocol, LLMClientProtocol
 
 
 class ChatResult:
@@ -26,8 +25,8 @@ class ChatService:
     def __init__(
         self,
         session: AsyncSession,
-        repository: ConversationRepository,
-        client: OpenAIClient,
+        repository: ConversationRepositoryProtocol,
+        client: LLMClientProtocol,
     ):
         self._session = session
         self._repository = repository
@@ -56,20 +55,24 @@ class ChatService:
 
             chunks = []
 
-            async for chunk in result.stream():
-                chunks.append(chunk)
+            try:
+                async for chunk in result.stream():
+                    chunks.append(chunk)
 
-                yield chunk
+                    yield chunk
 
-            await self._repository.add_message(
-                conversation_id=conversation_id,
-                role=MessageRole.ASSISTANT,
-                content="".join(chunks),
-                prompt_tokens=result.usage.prompt_tokens,
-                completion_tokens=result.usage.completion_tokens,
-                total_tokens=result.usage.total_tokens,
-            )
+                await self._repository.add_message(
+                    conversation_id=conversation_id,
+                    role=MessageRole.ASSISTANT,
+                    content="".join(chunks),
+                    prompt_tokens=result.usage.prompt_tokens,
+                    completion_tokens=result.usage.completion_tokens,
+                    total_tokens=result.usage.total_tokens,
+                )
 
-            await self._session.commit()
+                await self._session.commit()
+            except Exception:
+                await self._session.rollback()
+                raise
 
         return ChatResult(conversation_id=conversation_id, stream=stream())
