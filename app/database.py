@@ -3,6 +3,8 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, Asyn
 from collections.abc import AsyncGenerator
 
 from settings.settings import get_settings
+from contextlib import asynccontextmanager
+
 
 settings = get_settings()
 
@@ -18,3 +20,18 @@ class Base(DeclarativeBase):
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
     async with SessionLocal() as session:
         yield session
+
+
+async def create_database():
+
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+
+@asynccontextmanager
+async def lifespan(app):
+    await create_database()
+
+    yield
+
+    await engine.dispose()

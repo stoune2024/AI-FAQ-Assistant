@@ -1,12 +1,10 @@
-from fastapi import APIRouter
 from fastapi import FastAPI
 
 from app.controllers import router
+from app.database import lifespan
 
-app = FastAPI()
 
-api_router = APIRouter(prefix="/api/v1")
+app = FastAPI(lifespan=lifespan, openapi_prefix="/api/v1")
 
-api_router.include_router(router)
 
-app.include_router(api_router)
+app.include_router(router)
