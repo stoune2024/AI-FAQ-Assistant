@@ -27,8 +27,8 @@ def get_llm_client() -> LLMClientProtocol:
     settings = get_settings()
 
     return OpenAIClient(
-        api_key=settings.openai_api_key,
-        model=settings.openai_model,
+        api_key=settings.OPENAI_API_KEY,
+        model=settings.MODEL_NAME,
     )
 
 

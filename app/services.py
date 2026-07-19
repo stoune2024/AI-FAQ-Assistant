@@ -44,12 +44,14 @@ class ChatService:
             conversation_id=conversation_id, role=MessageRole.USER, content=user_message
         )
 
+        messages = await self._repository.get_messages(conversation_id)
+
         history = [
             ChatMessage(
                 role=message.role,
                 content=message.content,
             )
-            for message in self._repository.get_messages(conversation_id)
+            for message in messages
         ]
 
         result = await self._client.chat(history)

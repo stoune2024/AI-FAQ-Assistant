@@ -1,9 +1,10 @@
 from functools import lru_cache
 
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
     POSTGRES_HOST: str
     POSTGRES_PORT: str
     POSTGRES_USER: str
@@ -16,14 +17,11 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str
     MODEL_NAME: str
 
-    class Config:
-        env_file = ".env"
-
     @property
-    def db_url(self):
+    def db_url(self) -> str:
         return (
-            f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASS}@"
-            f"{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+            f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@"
+            f"{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
         )
 
 
