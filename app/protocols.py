@@ -1,6 +1,6 @@
 from typing import Protocol
 
-from app.clients import StreamResult
+from app.clients.stream import StreamResult
 from app.models import ChatMessage
 from app.models import MessageRole, Conversation
 from app.schemas import MessageSchema
@@ -30,6 +30,11 @@ class ConversationRepositoryProtocol(Protocol):
         completion_tokens: int | None = None,
         total_tokens: int | None = None,
     ) -> MessageSchema: ...
+
+    async def get_history_for_llm(
+        self,
+        conversation_id: int,
+    ) -> list[ChatMessage]: ...
 
 
 class LLMClientProtocol(Protocol):

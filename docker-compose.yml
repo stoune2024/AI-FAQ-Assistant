@@ -26,6 +26,18 @@ services:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
 
+  ollama:
+
+    image: ollama/ollama
+    command: >
+      sh -c "
+      ollama pull qwen3:8b
+      "
+    ports:
+      - "11434:11434"
+
+    volumes:
+      - ollama:/root/.ollama
 
   adminer:
     image: adminer

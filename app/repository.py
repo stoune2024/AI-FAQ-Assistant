@@ -24,7 +24,7 @@ class ConversationRepository:
 
         return await self._session.scalar(statement)
 
-    async def get_messages(self, conversation_id: int) -> list[ChatMessage]:
+    async def get_messages(self, conversation_id: int) -> list[MessageSchema]:
         statement = (
             select(MessageSchema)
             .where(MessageSchema.conversation_id == conversation_id)
@@ -55,3 +55,17 @@ class ConversationRepository:
         self._session.add(message)
         await self._session.flush()
         return message
+
+    async def get_history_for_llm(
+        self,
+        conversation_id: int,
+    ) -> list[ChatMessage]:
+        messages = await self.get_messages(conversation_id)
+
+        return [
+            ChatMessage(
+                role=message.role,
+                content=message.content,
+            )
+            for message in messages
+        ]

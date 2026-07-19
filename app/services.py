@@ -4,9 +4,9 @@
 
 """
 
-from typing import AsyncIterator, Callable
+from typing import AsyncIterator
 
-from app.models import MessageRole, ChatMessage
+from app.models import MessageRole
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.protocols import ConversationRepositoryProtocol, LLMClientProtocol
 
@@ -15,13 +15,13 @@ class ChatSession:
     def __init__(
         self,
         conversation_id: int,
-        stream_factory: Callable[[], AsyncIterator[str]],
+        stream: AsyncIterator[str],
     ):
         self.conversation_id = conversation_id
-        self._stream_factory = stream_factory
+        self._stream = stream
 
     def stream(self) -> AsyncIterator[str]:
-        return self._stream_factory()
+        return self._stream
 
 
 class ChatService:
@@ -40,20 +40,14 @@ class ChatService:
             conversation = await self._repository.create_conversation()
             conversation_id = conversation.id
 
-        self._repository.add_message(
+        await self._repository.add_message(
             conversation_id=conversation_id, role=MessageRole.USER, content=user_message
         )
 
-        messages = await self._repository.get_messages(conversation_id)
-
-        history = [
-            ChatMessage(
-                role=message.role,
-                content=message.content,
-            )
-            for message in messages
-        ]
-
+        history = await self._repository.get_history_for_llm(conversation_id)
+        if not history:
+            raise RuntimeError("Conversation history is empty.")
+        print(f"История клиента: {history}")
         result = await self._client.chat(history)
 
         async def stream():
