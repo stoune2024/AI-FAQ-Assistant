@@ -46,3 +46,7 @@ class ChatRequest(BaseModel):
 class ConversationResponse(BaseModel):
     conversation_id: int
     messages: list[ChatMessage]
+
+
+class ConversationCreated(BaseModel):
+    conversation_id: int

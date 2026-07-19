@@ -34,8 +34,8 @@ def get_llm_client() -> LLMClientProtocol:
 
 async def get_chat_service(
     session: AsyncSession = Depends(get_session),
-    repository: ConversationRepository = Depends(get_repository),
-    client: OpenAIClient = Depends(get_llm_client),
+    repository: ConversationRepositoryProtocol = Depends(get_repository),
+    client: LLMClientProtocol = Depends(get_llm_client),
 ) -> ChatService:
 
     return ChatService(

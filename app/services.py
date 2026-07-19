@@ -4,21 +4,24 @@
 
 """
 
-from typing import AsyncIterator
+from typing import AsyncIterator, Callable
 
 from app.models import MessageRole, ChatMessage
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.protocols import ConversationRepositoryProtocol, LLMClientProtocol
 
 
-class ChatResult:
+class ChatSession:
     def __init__(
         self,
         conversation_id: int,
-        stream: AsyncIterator[str],
+        stream_factory: Callable[[], AsyncIterator[str]],
     ):
         self.conversation_id = conversation_id
-        self.stream = stream
+        self._stream_factory = stream_factory
+
+    def stream(self) -> AsyncIterator[str]:
+        return self._stream_factory()
 
 
 class ChatService:
@@ -32,7 +35,7 @@ class ChatService:
         self._repository = repository
         self._client = client
 
-    async def chat(self, conversation_id: int | None, user_message: str) -> ChatResult:
+    async def chat(self, conversation_id: int | None, user_message: str) -> ChatSession:
         if conversation_id is None:
             conversation = await self._repository.create_conversation()
             conversation_id = conversation.id
@@ -75,4 +78,4 @@ class ChatService:
                 await self._session.rollback()
                 raise
 
-        return ChatResult(conversation_id=conversation_id, stream=stream())
+        return ChatSession(conversation_id=conversation_id, stream=stream())

@@ -1,8 +1,29 @@
 from fastapi import APIRouter
+from fastapi import Depends
+from fastapi.responses import StreamingResponse
 
-router = APIRouter(tags=["Роутер сервиса"])
+from app.dependencies import get_chat_service
+from app.models import ChatRequest
+from app.services import ChatService
+
+router = APIRouter(prefix="/chat", tags=["Chat"])
 
 
-@router.get("/")
-async def get_hw_page():
-    return {"message": "Привет из ручки сервиса!"}
+@router.post("/")
+async def chat(
+    request: ChatRequest,
+    service: ChatService = Depends(get_chat_service),
+):
+
+    result = await service.chat(
+        conversation_id=request.conversation_id,
+        user_message=request.message,
+    )
+
+    headers = {"X-Conversation-ID": str(result.conversation_id)}
+
+    return StreamingResponse(
+        result.stream(),
+        media_type="text/plain",
+        headers=headers,
+    )
