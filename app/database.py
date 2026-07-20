@@ -22,6 +22,11 @@ async def get_session() -> AsyncGenerator[AsyncSession, None]:
         yield session
 
 
+def get_session_factory():
+
+    return SessionLocal
+
+
 async def create_database():
 
     async with engine.begin() as conn:

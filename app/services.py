@@ -7,7 +7,10 @@
 from typing import AsyncIterator
 
 from app.models import MessageRole
-from app.protocols import ConversationRepositoryProtocol, LLMClientProtocol
+from app.protocols import (
+    LLMClientProtocol,
+    UnitOfWorkFactoryProtocol,
+)
 
 
 class ChatSession:
@@ -26,52 +29,58 @@ class ChatSession:
 class ChatService:
     def __init__(
         self,
-        repository: ConversationRepositoryProtocol,
+        uow_factory: UnitOfWorkFactoryProtocol,
         client: LLMClientProtocol,
     ):
-        self._repository = repository
+        self._uow_factory = uow_factory
         self._client = client
 
     async def chat(self, conversation_id: int | None, user_message: str) -> ChatSession:
+        # 1. Создание разговора
         if conversation_id is None:
-            conversation = await self._repository.create_conversation()
-            conversation_id = conversation.id
-            await self._repository.commit()
+            async with self._uow_factory() as uow:
+                conversation = await uow.conversations.create_conversation()
+                await uow.commit()
+                conversation_id = conversation.id
 
-        await self._repository.add_message(
-            conversation_id=conversation_id, role=MessageRole.USER, content=user_message
-        )
-        await self._repository.commit()
+        # 2. Сохранение пользовательского сообщения
+        async with self._uow_factory() as uow:
+            await uow.conversations.add_message(
+                conversation_id=conversation_id,
+                role=MessageRole.USER,
+                content=user_message,
+            )
+            await uow.commit()
 
-        history = await self._repository.get_history_for_llm(conversation_id)
-        if not history:
-            raise RuntimeError("Conversation history is empty.")
+        # 3. Получение истории
+        async with self._uow_factory() as uow:
+            history = await uow.conversations.get_history_for_llm(conversation_id)
+            if not history:
+                raise RuntimeError("Conversation history is empty.")
+
         result = await self._client.chat(history)
 
         async def stream():
 
             chunks = []
 
-            try:
-                async for chunk in result.stream():
-                    chunks.append(chunk)
+            async for chunk in result.stream():
+                chunks.append(chunk)
 
-                    yield chunk
+                yield chunk
+            # 4. Создание сообщения ассистента
+            async with self._uow_factory() as uow:
+                usage = result.usage
 
-                await self._repository.add_message(
+                await uow.conversations.add_message(
                     conversation_id=conversation_id,
                     role=MessageRole.ASSISTANT,
                     content="".join(chunks),
-                    prompt_tokens=result.usage.prompt_tokens if result.usage else None,
-                    completion_tokens=result.usage.completion_tokens
-                    if result.usage
-                    else None,
-                    total_tokens=result.usage.total_tokens if result.usage else None,
+                    prompt_tokens=usage.prompt_tokens if usage else None,
+                    completion_tokens=usage.completion_tokens if usage else None,
+                    total_tokens=usage.total_tokens if usage else None,
                 )
 
-                await self._repository.commit()
-            except Exception:
-                await self._repository.rollback()
-                raise
+                await uow.commit()
 
         return ChatSession(conversation_id=conversation_id, stream=stream())

@@ -9,11 +9,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.clients import OpenAIClient
 from app.clients import OllamaClient
-from app.database import get_session
+from app.database import get_session, get_session_factory
 from app.repository import ConversationRepository
 from app.services import ChatService
 from settings.settings import get_settings
 from app.protocols import ConversationRepositoryProtocol, LLMClientProtocol
+from app.uow import UnitOfWorkFactory
 
 
 async def get_repository(
@@ -48,12 +49,19 @@ def get_llm_client() -> LLMClientProtocol:
             raise ValueError(f"Unknown LLM provider: {settings.LLM_PROVIDER}")
 
 
+def get_uow_factory():
+
+    return UnitOfWorkFactory(
+        get_session_factory(),
+    )
+
+
 async def get_chat_service(
-    repository: ConversationRepositoryProtocol = Depends(get_repository),
+    uow_factory=Depends(get_uow_factory),
     client: LLMClientProtocol = Depends(get_llm_client),
 ) -> ChatService:
 
     return ChatService(
-        repository=repository,
+        uow_factory=uow_factory,
         client=client,
     )
