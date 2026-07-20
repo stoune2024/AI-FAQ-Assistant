@@ -31,7 +31,7 @@ def get_llm_client() -> LLMClientProtocol:
     """
     settings = get_settings()
 
-    match settings.llm_provider:
+    match settings.LLM_PROVIDER:
         case "ollama":
             return OllamaClient(
                 host=settings.OLLAMA_HOST,
@@ -45,19 +45,15 @@ def get_llm_client() -> LLMClientProtocol:
             )
 
         case _:
-            raise ValueError(
-                f"Unknown LLM provider: {settings.LLM_PROVIDER}"
-            )
+            raise ValueError(f"Unknown LLM provider: {settings.LLM_PROVIDER}")
 
 
 async def get_chat_service(
-    session: AsyncSession = Depends(get_session),
     repository: ConversationRepositoryProtocol = Depends(get_repository),
     client: LLMClientProtocol = Depends(get_llm_client),
 ) -> ChatService:
 
     return ChatService(
-        session=session,
         repository=repository,
         client=client,
     )

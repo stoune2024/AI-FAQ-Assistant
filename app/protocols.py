@@ -36,6 +36,10 @@ class ConversationRepositoryProtocol(Protocol):
         conversation_id: int,
     ) -> list[ChatMessage]: ...
 
+    async def commit(self) -> None: ...
+
+    async def rollback(self) -> None: ...
+
 
 class LLMClientProtocol(Protocol):
     async def chat(

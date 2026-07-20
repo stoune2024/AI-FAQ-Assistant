@@ -7,7 +7,6 @@
 from typing import AsyncIterator
 
 from app.models import MessageRole
-from sqlalchemy.ext.asyncio import AsyncSession
 from app.protocols import ConversationRepositoryProtocol, LLMClientProtocol
 
 
@@ -27,11 +26,9 @@ class ChatSession:
 class ChatService:
     def __init__(
         self,
-        session: AsyncSession,
         repository: ConversationRepositoryProtocol,
         client: LLMClientProtocol,
     ):
-        self._session = session
         self._repository = repository
         self._client = client
 
@@ -64,14 +61,16 @@ class ChatService:
                     conversation_id=conversation_id,
                     role=MessageRole.ASSISTANT,
                     content="".join(chunks),
-                    prompt_tokens=result.usage.prompt_tokens,
-                    completion_tokens=result.usage.completion_tokens,
-                    total_tokens=result.usage.total_tokens,
+                    prompt_tokens=result.usage.prompt_tokens if result.usage else None,
+                    completion_tokens=result.usage.completion_tokens
+                    if result.usage
+                    else None,
+                    total_tokens=result.usage.total_tokens if result.usage else None,
                 )
 
-                await self._session.commit()
+                await self._repository.commit()
             except Exception:
-                await self._session.rollback()
+                await self._repository.rollback()
                 raise
 
         return ChatSession(conversation_id=conversation_id, stream=stream())
