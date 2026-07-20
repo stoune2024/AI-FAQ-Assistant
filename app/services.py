@@ -36,15 +36,16 @@ class ChatService:
         if conversation_id is None:
             conversation = await self._repository.create_conversation()
             conversation_id = conversation.id
+            await self._repository.commit()
 
         await self._repository.add_message(
             conversation_id=conversation_id, role=MessageRole.USER, content=user_message
         )
+        await self._repository.commit()
 
         history = await self._repository.get_history_for_llm(conversation_id)
         if not history:
             raise RuntimeError("Conversation history is empty.")
-        print(f"История клиента: {history}")
         result = await self._client.chat(history)
 
         async def stream():
