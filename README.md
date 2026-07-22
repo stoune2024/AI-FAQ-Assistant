@@ -293,12 +293,16 @@ docker compose up --build
 
 ---
 
-## 4. Загрузить модель Ollama
+## 4. Модели Ollama
 
-После запуска контейнеров необходимо один раз загрузить модель.
+После запуска контейнеров модель загружается самостоятельно благодаря
 
 ```bash
-docker exec -it ai-chat-ollama ollama pull qwen2.5:3b
+entrypoint: >
+      sh -c "
+        sleep 10 &&
+        ollama pull ${LLM_MODEL}
+      "
 ```
 
 После завершения загрузки модель сохраняется в Docker Volume и повторная загрузка не потребуется.
