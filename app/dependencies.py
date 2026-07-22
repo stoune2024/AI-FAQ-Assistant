@@ -5,23 +5,14 @@
 """
 
 from fastapi import Depends
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.clients import OpenAIClient
 from app.clients import OllamaClient
-from app.database import get_session, get_session_factory
-from app.repository import ConversationRepository
+from app.database import get_session_factory
 from app.services import ChatService
 from settings.settings import get_settings
-from app.protocols import ConversationRepositoryProtocol, LLMClientProtocol
+from app.protocols import LLMClientProtocol
 from app.uow import UnitOfWorkFactory
-
-
-async def get_repository(
-    session: AsyncSession = Depends(get_session),
-) -> ConversationRepositoryProtocol:
-
-    return ConversationRepository(session)
 
 
 def get_llm_client() -> LLMClientProtocol:

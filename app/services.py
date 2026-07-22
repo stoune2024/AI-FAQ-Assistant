@@ -36,15 +36,12 @@ class ChatService:
         self._client = client
 
     async def chat(self, conversation_id: int | None, user_message: str) -> ChatSession:
-        # 1. Создание разговора
-        if conversation_id is None:
-            async with self._uow_factory() as uow:
+        # 1. Подготовка запроса (создание диалога и сохранение пользовательского сообщения)
+        async with self._uow_factory() as uow:
+            if conversation_id is None:
                 conversation = await uow.conversations.create_conversation()
-                await uow.commit()
                 conversation_id = conversation.id
 
-        # 2. Сохранение пользовательского сообщения
-        async with self._uow_factory() as uow:
             await uow.conversations.add_message(
                 conversation_id=conversation_id,
                 role=MessageRole.USER,
@@ -52,7 +49,7 @@ class ChatService:
             )
             await uow.commit()
 
-        # 3. Получение истории
+        # 2. Получение истории
         async with self._uow_factory() as uow:
             history = await uow.conversations.get_history_for_llm(conversation_id)
             if not history:
